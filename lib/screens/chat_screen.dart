@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'package:flash_chat/constants.dart';
+import 'package:flutter_spinkit/flutter_spinkit.dart';
 
 class ChatScreen extends StatefulWidget {
   static const String routeId = 'chat_screen';
@@ -22,6 +23,7 @@ class _ChatScreenState extends State<ChatScreen> {
   void initState() {
     super.initState();
     getCurrentUser();
+//    getMessages();
   }
 
   void getCurrentUser() async {
@@ -33,6 +35,32 @@ class _ChatScreenState extends State<ChatScreen> {
       }
     } catch (e) {
       print(e);
+    }
+  }
+
+  /// Using for in retrieving data ONE time
+  /// snapshot.documents type: List<DocumentSnapshot>
+  /// message type: DocumentSnapshot
+//  void getMessages() async {
+//    final QuerySnapshot snapshot =
+//        await _firestore.collection('messages').getDocuments();
+
+//    for (var message in snapshot.documents) {
+//      print(message.data);
+//    }
+
+  /// another approach getting Map<String, dynamic> of data
+//    snapshot.documents.forEach((snp) {
+//      print(snp.data);
+//    });
+//  }
+
+  void messagesStream() async {
+    /// .snapshots() return Stream<QuerySnapshot>
+    await for (var snapshot in _firestore.collection('messages').snapshots()) {
+      for (var message in snapshot.documents) {
+        print(message.data);
+      }
     }
   }
 
@@ -57,6 +85,36 @@ class _ChatScreenState extends State<ChatScreen> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
+            /// Writing QuerySnapshot in anchor bracket (StreamBuilder<QuerySnapshot>)
+            /// auto-referred the data extracted from the asyncSnapshot
+            /// has a data-type: QuerySnapshot
+            StreamBuilder<QuerySnapshot>(
+              stream: _firestore.collection('messages').snapshots(),
+              builder: ((_, AsyncSnapshot<QuerySnapshot> asyncSnapshot) {
+                if (asyncSnapshot.hasError || !asyncSnapshot.hasData) {
+                  return Center(
+                    child: SpinKitDoubleBounce(
+                      color: Colors.white,
+                      size: 50.0,
+                    ),
+                  );
+                }
+
+                /// AsyncSnapshot asyncSnapshot contains ours QuerySnapshot-typed data
+                /// using asyncSnapshot.data extracted it out
+                final QuerySnapshot querySnapshot = asyncSnapshot.data;
+                return Column(
+                  children: querySnapshot.documents
+                      .map(
+                        (messageContent) => Text(
+                          '${messageContent.data['text']} form ${messageContent.data['sender']}',
+                          textAlign: TextAlign.center,
+                        ),
+                      )
+                      .toList(),
+                );
+              }),
+            ),
             Container(
               decoration: kMessageContainerDecoration,
               child: Row(
