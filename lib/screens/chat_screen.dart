@@ -3,8 +3,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 import 'package:flash_chat/constants.dart';
 
-import 'welcome_screen.dart';
-
 class ChatScreen extends StatefulWidget {
   static const String routeId = 'chat_screen';
 
