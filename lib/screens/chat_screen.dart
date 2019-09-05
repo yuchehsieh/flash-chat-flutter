@@ -70,6 +70,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
   @override
   Widget build(BuildContext context) {
+//    print('viewInsets.bottom: ${MediaQuery.of(context).viewInsets.bottom}');
     return Scaffold(
       appBar: AppBar(
         leading: null,
@@ -128,6 +129,13 @@ class _ChatScreenState extends State<ChatScreen> {
 }
 
 class MessageStream extends StatelessWidget {
+  final ScrollController _scrollController = new ScrollController();
+
+  void scrollToBottom() {
+    _scrollController.animateTo(_scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
+  }
+
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<QuerySnapshot>(
@@ -150,31 +158,35 @@ class MessageStream extends StatelessWidget {
         /// Using Expanded constraint the ListView
         /// inside the limited space
         return Expanded(
-          child: GestureDetector(
-            onTap: () => FocusScope.of(context).unfocus(),
-            onVerticalDragDown: ((detail) {
-              print(
-                  'directopn:  ${detail.localPosition.direction.toStringAsFixed(2)}');
-              print('pi/2: ${(pi / 2).toStringAsFixed(2)}');
-              print('-----------------');
+          child: LayoutBuilder(
+            builder: (_, constraint) => GestureDetector(
+              onTap: () => FocusScope.of(context).unfocus(),
+              onVerticalDragDown: ((detail) {
+//                print(
+//                    'directopn:  ${detail.localPosition.direction.toStringAsFixed(2)}');
+//                print('pi/2: ${(pi / 2).toStringAsFixed(2)}');
+//                print('-----------------');
 
-              if (detail.localPosition.direction < 1.1) {
-                FocusScope.of(context).unfocus();
-              }
-            }),
-            child: ListView.builder(
-              padding: EdgeInsets.symmetric(
-                horizontal: 10.0,
-                vertical: 20.0,
-              ),
-              itemCount: documentSnapshot.length,
-              itemBuilder: ((_, index) {
-                final message = documentSnapshot[index].data;
-                return MessageBubble(
-                  sender: message['sender'],
-                  text: message['text'],
-                );
+                if (detail.localPosition.direction < 1.1) {
+                  FocusScope.of(context).unfocus();
+                }
               }),
+              child: ListView.builder(
+                controller: _scrollController,
+                padding: EdgeInsets.fromLTRB(10.0, 20.0, 10.0, 20.0),
+                itemCount: documentSnapshot.length,
+                itemBuilder: ((_, index) {
+                  if (constraint.maxHeight < 500) {
+                    /// Soft-Keyboard pop-up
+                    scrollToBottom();
+                  }
+                  final message = documentSnapshot[index].data;
+                  return MessageBubble(
+                    sender: message['sender'],
+                    text: message['text'],
+                  );
+                }),
+              ),
             ),
           ),
         );
