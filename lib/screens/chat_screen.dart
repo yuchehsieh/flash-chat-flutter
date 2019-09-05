@@ -103,15 +103,26 @@ class _ChatScreenState extends State<ChatScreen> {
                 /// AsyncSnapshot asyncSnapshot contains ours QuerySnapshot-typed data
                 /// using asyncSnapshot.data extracted it out
                 final QuerySnapshot querySnapshot = asyncSnapshot.data;
-                return Column(
-                  children: querySnapshot.documents
-                      .map(
-                        (messageContent) => Text(
-                          '${messageContent.data['text']} form ${messageContent.data['sender']}',
-                          textAlign: TextAlign.center,
-                        ),
-                      )
-                      .toList(),
+                final List<DocumentSnapshot> documentSnapshot =
+                    querySnapshot.documents;
+
+                /// Using Expanded constraint the ListView
+                /// inside the limited space
+                return Expanded(
+                  child: ListView.builder(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 10.0,
+                      vertical: 20.0,
+                    ),
+                    itemCount: documentSnapshot.length,
+                    itemBuilder: ((_, index) {
+                      final message = documentSnapshot[index].data;
+                      return MessageBubble(
+                        sender: message['sender'],
+                        text: message['text'],
+                      );
+                    }),
+                  ),
                 );
               }),
             ),
@@ -147,6 +158,24 @@ class _ChatScreenState extends State<ChatScreen> {
           ],
         ),
       ),
+    );
+  }
+}
+
+class MessageBubble extends StatelessWidget {
+  MessageBubble({
+    this.sender,
+    this.text,
+  });
+
+  final String sender;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      '$text form $sender',
+      textAlign: TextAlign.center,
     );
   }
 }
