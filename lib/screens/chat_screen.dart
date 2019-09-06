@@ -1,5 +1,3 @@
-import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -8,6 +6,7 @@ import 'package:flash_chat/constants.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 
 final Firestore _firestore = Firestore.instance;
+FirebaseUser loggedInUser;
 
 class ChatScreen extends StatefulWidget {
   static const String routeId = 'chat_screen';
@@ -20,7 +19,6 @@ class _ChatScreenState extends State<ChatScreen> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final TextEditingController messageTextController = TextEditingController();
 
-  FirebaseUser loggedInUser;
   String messageText;
 
   @override
@@ -110,6 +108,7 @@ class _ChatScreenState extends State<ChatScreen> {
                       _firestore.collection('messages').add({
                         'sender': loggedInUser.email,
                         'text': messageTextController.text,
+                        'timestamp': DateTime.now().millisecondsSinceEpoch,
                       });
                       messageTextController.clear();
                     },
@@ -129,12 +128,14 @@ class _ChatScreenState extends State<ChatScreen> {
 }
 
 class MessageStream extends StatelessWidget {
-  final ScrollController _scrollController = new ScrollController();
+//  final ScrollController _scrollController = new ScrollController();
 
-  void scrollToBottom() {
-    _scrollController.animateTo(_scrollController.position.maxScrollExtent,
-        duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
-  }
+  /// REVERSE entire List could solve the problem
+  /// KEEP LATEST MESSAGE AT BOTTOM
+//  void scrollToBottom() {
+//    _scrollController.animateTo(_scrollController.position.maxScrollExtent,
+//        duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
+//  }
 
   @override
   Widget build(BuildContext context) {
@@ -153,7 +154,10 @@ class MessageStream extends StatelessWidget {
         /// AsyncSnapshot asyncSnapshot contains ours QuerySnapshot-typed data
         /// using asyncSnapshot.data extracted it out
         final QuerySnapshot querySnapshot = asyncSnapshot.data;
-        final List<DocumentSnapshot> documentSnapshot = querySnapshot.documents;
+        final List<DocumentSnapshot> documentSnapshot = querySnapshot.documents
+          ..sort(
+            (a, b) => b.data['timestamp'].compareTo(a.data['timestamp']),
+          );
 
         /// Using Expanded constraint the ListView
         /// inside the limited space
@@ -162,28 +166,33 @@ class MessageStream extends StatelessWidget {
             builder: (_, constraint) => GestureDetector(
               onTap: () => FocusScope.of(context).unfocus(),
               onVerticalDragDown: ((detail) {
-//                print(
-//                    'directopn:  ${detail.localPosition.direction.toStringAsFixed(2)}');
-//                print('pi/2: ${(pi / 2).toStringAsFixed(2)}');
-//                print('-----------------');
-
                 if (detail.localPosition.direction < 1.1) {
                   FocusScope.of(context).unfocus();
                 }
               }),
               child: ListView.builder(
-                controller: _scrollController,
+                reverse: true,
+
+                /// REVERSE entire List could solve the problem
+                /// KEEP LATEST MESSAGE AT BOTTOM
+//                controller: _scrollController,
                 padding: EdgeInsets.fromLTRB(10.0, 20.0, 10.0, 20.0),
                 itemCount: documentSnapshot.length,
                 itemBuilder: ((_, index) {
-                  if (constraint.maxHeight < 500) {
-                    /// Soft-Keyboard pop-up
-                    scrollToBottom();
-                  }
+                  /// REVERSE entire List could solve the problem
+                  /// KEEP LATEST MESSAGE AT BOTTOM
+//                  if (constraint.maxHeight < 500) {
+//                    /// Soft-Keyboard pop-up
+//                    scrollToBottom();
+//                  }
+
                   final message = documentSnapshot[index].data;
+                  final currentUser = loggedInUser.email;
+
                   return MessageBubble(
                     sender: message['sender'],
                     text: message['text'],
+                    isMe: currentUser == message['sender'],
                   );
                 }),
               ),
@@ -199,17 +208,20 @@ class MessageBubble extends StatelessWidget {
   MessageBubble({
     this.sender,
     this.text,
+    this.isMe,
   });
 
   final String sender;
   final String text;
+  final bool isMe;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.all(10.0),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.end,
+        crossAxisAlignment:
+            isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
           Text(
@@ -220,12 +232,13 @@ class MessageBubble extends StatelessWidget {
             ),
           ),
           Material(
-            color: Colors.lightBlueAccent,
+            color: isMe ? Colors.lightBlueAccent : Colors.amberAccent,
             elevation: 5.0,
-            borderRadius: BorderRadius.all(
-              Radius.circular(
-                30.0,
-              ),
+            borderRadius: BorderRadius.only(
+              bottomLeft: bubbleRadius,
+              bottomRight: bubbleRadius,
+              topLeft: isMe ? bubbleRadius : Radius.circular(0.0),
+              topRight: !isMe ? bubbleRadius : Radius.circular(0.0),
             ),
             child: Padding(
               padding: const EdgeInsets.symmetric(
@@ -245,3 +258,7 @@ class MessageBubble extends StatelessWidget {
     );
   }
 }
+
+const bubbleRadius = Radius.circular(
+  30.0,
+);

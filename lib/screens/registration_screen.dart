@@ -33,18 +33,20 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
-              Hero(
-                tag: 'flash_image',
-                child: Container(
-                  height: 200.0,
-                  child: Image.asset('images/logo.png'),
-                  decoration: BoxDecoration(
+              Flexible(
+                child: Hero(
+                  tag: 'flash_image',
+                  child: Container(
+                    height: 200.0,
+                    child: Image.asset('images/logo.png'),
+                    decoration: BoxDecoration(
 
-                      /// BorderRadius class work both on following 2 lines
+                        /// BorderRadius class work both on following 2 lines
 
-                      ///             borderRadius: BorderRadius.circular(20)
-                      ///              borderRadius: BorderRadius.all(Radius.circular(20)),
-                      ),
+                        ///             borderRadius: BorderRadius.circular(20)
+                        ///              borderRadius: BorderRadius.all(Radius.circular(20)),
+                        ),
+                  ),
                 ),
               ),
               SizedBox(
